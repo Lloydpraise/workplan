@@ -12,12 +12,16 @@ create table if not exists workplan.tasks (
   position integer not null default 0,
   recurring boolean not null default false,
   recurrence_id uuid,
+  postponed_from date,
   created_at timestamptz not null default now()
 );
+
+alter table workplan.tasks add column if not exists postponed_from date;
 
 create index if not exists tasks_date_idx on workplan.tasks (date);
 create index if not exists tasks_block_date_idx on workplan.tasks (block_id, date);
 create index if not exists tasks_recurrence_id_idx on workplan.tasks (recurrence_id);
+create index if not exists tasks_postponed_from_idx on workplan.tasks (postponed_from);
 
 -- This is a single-user personal tool using the anon key directly, so RLS is left
 -- disabled for simplicity. If you ever make the URL public or add other users,

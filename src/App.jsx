@@ -88,8 +88,11 @@ export default function App() {
 
     const templates = rows.filter((row) => row.recurring);
     const dayRows = rows.filter((row) => !row.recurring && row.date === dateISO);
+    const postponedRows = rows.filter((row) => row.postponed_from === dateISO);
     const missingInstances = templates.filter(
-      (template) => !dayRows.some((row) => row.recurrence_id === template.id)
+      (template) =>
+        !dayRows.some((row) => row.recurrence_id === template.id) &&
+        !postponedRows.some((row) => row.recurrence_id === template.id)
     );
     let createdInstances = [];
 
@@ -247,6 +250,22 @@ export default function App() {
     }));
     const { error: err } = await workplan.from("tasks").delete().eq("id", task.id);
     if (err) setError(err.message);
+  }
+
+  async function postponeTask(blockId, task) {
+    if (!workplan || mode !== "today") return;
+    setTasksByBlock((prev) => ({
+      ...prev,
+      [blockId]: prev[blockId].filter((t) => t.id !== task.id),
+    }));
+    const { error: err } = await workplan
+      .from("tasks")
+      .update({ date: tomorrowISO, done: false, postponed_from: todayISO })
+      .eq("id", task.id);
+    if (err) {
+      setError(err.message);
+      await loadDay(activeDate);
+    }
   }
 
   async function toggleRecurring(task) {
@@ -477,6 +496,7 @@ export default function App() {
                           </span>
                           </label>
                           <RecurringButton task={t} onToggle={toggleRecurring} />
+                          <PostponeButton task={t} onPostpone={() => postponeTask(block.id, t)} />
                         </div>
                       ) : (
                         <div className="task" key={t.id}>
@@ -572,6 +592,19 @@ function RecurringButton({ task, onToggle }) {
   );
 }
 
+function PostponeButton({ task, onPostpone }) {
+  return (
+    <button
+      className="postpone-btn"
+      onClick={onPostpone}
+      aria-label={`Postpone ${task.text} until tomorrow`}
+      title="Postpone until tomorrow"
+    >
+      →
+    </button>
+  );
+}
+
 function TimerModal({ timer, onPause, onReset, onClose, onPin }) {
   const pct = 1 - timer.secondsLeft / timer.totalSeconds;
   return (
@@ -659,11 +692,16 @@ function MonthView({ stats, loading, onSelectDate }) {
             <button
               key={iso}
               type="button"
-              className="cell"
+              className={
+                ratio === 1 ? "cell full" : ratio > 0.8 ? "cell high" : "cell"
+              }
               onClick={() => onSelectDate(iso)}
               title={ratio === null ? "No tasks logged" : `${s.done}/${s.total} done`}
               style={{
-                background: ratio === null ? "transparent" : `rgba(184, 147, 90, ${opacity})`,
+                background:
+                  ratio === null || ratio > 0.8
+                    ? undefined
+                    : `rgba(184, 147, 90, ${opacity})`,
               }}
             >
               {parseInt(iso.slice(-2), 10)}

@@ -339,8 +339,32 @@ h1 {
   background: rgba(184, 147, 90, 0.12);
 }
 
+.postpone-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.postpone-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(184, 147, 90, 0.12);
+}
+
 html[data-theme="day"] .recurring-btn:hover,
 html[data-theme="day"] .recurring-btn.active {
+  background: rgba(98, 200, 255, 0.12);
+}
+
+html[data-theme="day"] .postpone-btn:hover {
   background: rgba(98, 200, 255, 0.12);
 }
 
@@ -453,6 +477,18 @@ input[type="checkbox"] {
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.2s, transform 0.15s, filter 0.2s;
+}
+
+.cell.high {
+  background: #c9e8c5;
+  border-color: #8fca88;
+  color: #1d4a27;
+}
+
+.cell.full {
+  background: #63b76a;
+  border-color: #3d8f49;
+  color: #123719;
 }
 
 .cell:hover,
