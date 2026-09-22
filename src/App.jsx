@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "./supabaseClient";
 import { BLOCKS, blockDurationMinutes, formatTimeRange } from "./blocks";
+import NotesDrawer from "./Notes";
 
 function toISODate(d) {
   const yr = d.getFullYear();
@@ -57,6 +58,7 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [congratsOpen, setCongratsOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   // ---- timer state ----
   const [timer, setTimer] = useState(null); // { blockId, label, totalSeconds, secondsLeft, running, pinned }
@@ -88,11 +90,8 @@ export default function App() {
 
     const templates = rows.filter((row) => row.recurring);
     const dayRows = rows.filter((row) => !row.recurring && row.date === dateISO);
-    const postponedRows = rows.filter((row) => row.postponed_from === dateISO);
     const missingInstances = templates.filter(
-      (template) =>
-        !dayRows.some((row) => row.recurrence_id === template.id) &&
-        !postponedRows.some((row) => row.recurrence_id === template.id)
+      (template) => !dayRows.some((row) => row.recurrence_id === template.id)
     );
     let createdInstances = [];
 
@@ -252,22 +251,6 @@ export default function App() {
     if (err) setError(err.message);
   }
 
-  async function postponeTask(blockId, task) {
-    if (!workplan || mode !== "today") return;
-    setTasksByBlock((prev) => ({
-      ...prev,
-      [blockId]: prev[blockId].filter((t) => t.id !== task.id),
-    }));
-    const { error: err } = await workplan
-      .from("tasks")
-      .update({ date: tomorrowISO, done: false, postponed_from: todayISO })
-      .eq("id", task.id);
-    if (err) {
-      setError(err.message);
-      await loadDay(activeDate);
-    }
-  }
-
   async function toggleRecurring(task) {
     if (!workplan) return;
     const isRecurring = Boolean(task.recurring || task.recurrence_id);
@@ -349,6 +332,15 @@ export default function App() {
     if (err) setError(err.message);
   }
 
+  // A note was turned into a task: if it landed on the day we're looking at, show it right away.
+  function handleTaskScheduled(task) {
+    if (mode === "month" || task.date !== activeDate) return;
+    setTasksByBlock((prev) => ({
+      ...prev,
+      [task.block_id]: [...(prev[task.block_id] || []), task],
+    }));
+  }
+
   function openDate(iso) {
     setSelectedDate(iso);
     setMode("day");
@@ -419,26 +411,31 @@ export default function App() {
         </div>
       </header>
 
-      <nav className="tabs">
-        <button
-          className={mode === "today" ? "tab active" : "tab"}
-          onClick={() => setMode("today")}
-        >
-          Today
+      <div className="tabs-row">
+        <nav className="tabs">
+          <button
+            className={mode === "today" ? "tab active" : "tab"}
+            onClick={() => setMode("today")}
+          >
+            Today
+          </button>
+          <button
+            className={mode === "plan" ? "tab active" : "tab"}
+            onClick={() => setMode("plan")}
+          >
+            Plan tomorrow
+          </button>
+          <button
+            className={mode === "month" ? "tab active" : "tab"}
+            onClick={() => setMode("month")}
+          >
+            Month
+          </button>
+        </nav>
+        <button className="notes-btn" onClick={() => setNotesOpen(true)}>
+          <span aria-hidden="true">✎</span> Notes
         </button>
-        <button
-          className={mode === "plan" ? "tab active" : "tab"}
-          onClick={() => setMode("plan")}
-        >
-          Plan tomorrow
-        </button>
-        <button
-          className={mode === "month" ? "tab active" : "tab"}
-          onClick={() => setMode("month")}
-        >
-          Month
-        </button>
-      </nav>
+      </div>
 
       {error && <p className="error">{error}</p>}
 
@@ -496,7 +493,6 @@ export default function App() {
                           </span>
                           </label>
                           <RecurringButton task={t} onToggle={toggleRecurring} />
-                          <PostponeButton task={t} onPostpone={() => postponeTask(block.id, t)} />
                         </div>
                       ) : (
                         <div className="task" key={t.id}>
@@ -565,6 +561,14 @@ export default function App() {
       {timer && timer.pinned && (
         <PinnedTimer timer={timer} onExpand={togglePin} onPause={togglePause} />
       )}
+      <NotesDrawer
+        open={notesOpen}
+        onClose={() => setNotesOpen(false)}
+        workplan={workplan}
+        todayISO={todayISO}
+        tomorrowISO={tomorrowISO}
+        onScheduled={handleTaskScheduled}
+      />
       {congratsOpen && (
         <CongratulationsModal
           onClose={() => setCongratsOpen(false)}
@@ -588,19 +592,6 @@ function RecurringButton({ task, onToggle }) {
       title={isRecurring ? "Recurring task" : "Repeat every day"}
     >
       ↻
-    </button>
-  );
-}
-
-function PostponeButton({ task, onPostpone }) {
-  return (
-    <button
-      className="postpone-btn"
-      onClick={onPostpone}
-      aria-label={`Postpone ${task.text} until tomorrow`}
-      title="Postpone until tomorrow"
-    >
-      →
     </button>
   );
 }
@@ -692,16 +683,11 @@ function MonthView({ stats, loading, onSelectDate }) {
             <button
               key={iso}
               type="button"
-              className={
-                ratio === 1 ? "cell full" : ratio > 0.8 ? "cell high" : "cell"
-              }
+              className="cell"
               onClick={() => onSelectDate(iso)}
               title={ratio === null ? "No tasks logged" : `${s.done}/${s.total} done`}
               style={{
-                background:
-                  ratio === null || ratio > 0.8
-                    ? undefined
-                    : `rgba(184, 147, 90, ${opacity})`,
+                background: ratio === null ? "transparent" : `rgba(184, 147, 90, ${opacity})`,
               }}
             >
               {parseInt(iso.slice(-2), 10)}

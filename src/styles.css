@@ -120,10 +120,18 @@ h1 {
   color: var(--text-muted);
 }
 
+.tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
 .tabs {
   display: flex;
   gap: 0.4rem;
-  margin-bottom: 1.75rem;
   background: var(--glass);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(16px);
@@ -148,6 +156,28 @@ h1 {
 .tab.active {
   color: var(--bg);
   background: var(--accent);
+}
+
+.notes-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--glass);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: background 0.2s, color 0.2s;
+}
+
+.notes-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
 }
 
 .error {
@@ -339,32 +369,8 @@ h1 {
   background: rgba(184, 147, 90, 0.12);
 }
 
-.postpone-btn {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border: 1px solid var(--glass-border);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
-}
-
-.postpone-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: rgba(184, 147, 90, 0.12);
-}
-
 html[data-theme="day"] .recurring-btn:hover,
 html[data-theme="day"] .recurring-btn.active {
-  background: rgba(98, 200, 255, 0.12);
-}
-
-html[data-theme="day"] .postpone-btn:hover {
   background: rgba(98, 200, 255, 0.12);
 }
 
@@ -477,18 +483,6 @@ input[type="checkbox"] {
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.2s, transform 0.15s, filter 0.2s;
-}
-
-.cell.high {
-  background: #c9e8c5;
-  border-color: #8fca88;
-  color: #1d4a27;
-}
-
-.cell.full {
-  background: #63b76a;
-  border-color: #3d8f49;
-  color: #123719;
 }
 
 .cell:hover,
@@ -675,4 +669,254 @@ input[type="checkbox"] {
     top: 3.7rem;
     right: 1rem;
   }
+}
+
+/* ---------- notes drawer ---------- */
+
+.notes-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 9, 7, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 90;
+}
+
+.notes-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100%);
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem 1.25rem;
+  background: rgba(28, 26, 21, 0.9);
+  border-left: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.45);
+  overflow-y: auto;
+}
+
+.notes-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.notes-head h2 {
+  font-family: "Newsreader", serif;
+  font-weight: 500;
+  font-size: 24px;
+  margin: 0;
+}
+
+.notes-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.notes-close:hover {
+  color: var(--accent);
+}
+
+.notes-compose textarea {
+  width: 100%;
+  resize: vertical;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 0.7rem 0.8rem;
+}
+
+.notes-compose textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.notes-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.notes-compose-actions button,
+.schedule-modal .modal-actions button {
+  background: rgba(237, 232, 222, 0.08);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.notes-compose-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.notes-compose-actions button.primary-action,
+.schedule-modal .modal-actions button.primary-action {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.notes-compose-actions button.primary-action:hover:not(:disabled) {
+  color: var(--bg);
+  filter: brightness(1.1);
+}
+
+.notes-compose-actions button:disabled,
+.schedule-modal .modal-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 0.7rem 0.8rem;
+}
+
+.note.scheduled {
+  border-color: rgba(109, 166, 112, 0.3);
+  opacity: 0.75;
+}
+
+.note-body {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+.note-body:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.note-task-btn {
+  background: rgba(184, 147, 90, 0.12);
+  border: 1px solid rgba(184, 147, 90, 0.4);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+html[data-theme="day"] .note-task-btn {
+  background: rgba(98, 200, 255, 0.12);
+  border-color: rgba(98, 200, 255, 0.4);
+}
+
+.note-task-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.note-badge {
+  color: #83c487;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- schedule modal (note -> task) ---------- */
+
+.schedule-overlay {
+  z-index: 110;
+}
+
+.schedule-modal {
+  width: min(440px, 100%);
+  padding: 1.75rem 1.5rem;
+  text-align: left;
+}
+
+.schedule-title {
+  margin-bottom: 1rem;
+}
+
+.schedule-field-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 1.1rem 0 0.4rem;
+}
+
+.schedule-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 0.6rem 0.75rem;
+  margin-top: 0.4rem;
+  color-scheme: dark;
+}
+
+.schedule-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.schedule-input option {
+  background: #1c1a15;
+  color: #ede8de;
+}
+
+.schedule-tabs {
+  margin-bottom: 0;
+}
+
+.schedule-modal .modal-actions {
+  justify-content: flex-end;
+  margin-top: 1.5rem;
 }
